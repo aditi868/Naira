@@ -1,5 +1,4 @@
-<head>
-  <meta charset="UTF-8">
+ <meta charset="UTF-8">
   <title>EduCoin Classroom Crypto</title>
   <link rel="stylesheet" href="style.css">
 </head>
