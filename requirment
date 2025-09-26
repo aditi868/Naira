@@ -1,6 +1,41 @@
-EduCoin Classroom Crypto - Requirements:
-1. Teacher mints 1 EduCoin for each correct answer.
-2. Students can transfer coins to each other.
-3. Real-time balance checking.
-4. Leaderboard to track top coin holders.
-5. Understand digital money and transactions.
+import streamlit as st
+
+# Simulated student balances
+students = {
+    "Alice": 0,
+    "Bob": 0,
+    "Charlie": 0,
+    "Diana": 0
+}
+
+st.title("EduCoin Classroom Crypto 💰")
+
+# Teacher panel to mint coins
+st.header("Teacher Panel")
+student_to_mint = st.selectbox("Select student to mint 1 coin:", list(students.keys()))
+if st.button("Mint 1 Coin"):
+    students[student_to_mint] += 1
+    st.success(f"Minted 1 EduCoin to {student_to_mint}")
+
+# Student panel to check balance and transfer
+st.header("Student Panel")
+student_wallet = st.selectbox("Select your wallet:", list(students.keys()), key="wallet")
+st.write(f"Your balance: {students[student_wallet]} EDC")
+
+recipient = st.selectbox("Transfer to:", [s for s in students if s != student_wallet])
+amount = st.number_input("Amount to transfer:", min_value=1, max_value=students[student_wallet], step=1)
+
+if st.button("Send"):
+    if amount <= students[student_wallet]:
+        students[student_wallet] -= amount
+        students[recipient] += amount
+        st.success(f"Transferred {amount} EduCoin(s) to {recipient}")
+    else:
+        st.error("Insufficient balance!")
+
+# Leaderboard
+st.header("Leaderboard")
+sorted_students = sorted(students.items(), key=lambda x: x[1], reverse=True)
+for name, balance in sorted_students:
+    st.write(f"{name}: {balance} EDC")
+
