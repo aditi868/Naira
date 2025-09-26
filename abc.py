@@ -5,24 +5,25 @@ from datetime import datetime
 
 # --- Blockchain helper functions ---
 def hash_block(block):
-    block_string = f"{block['index']}{block['timestamp']}{block['transactions']}{block['previous_hash']}"
+    block_string = f"{block['index']}{block['timestamp']}{block['transaction']}{block['previous_hash']}"
     return hashlib.sha256(block_string.encode()).hexdigest()
 
 def create_genesis_block():
     genesis_block = {
         "index": 0,
         "timestamp": str(datetime.now()),
-        "transactions": [],
+        "transaction": None,
         "previous_hash": "0",
+        "hash": ""
     }
     genesis_block["hash"] = hash_block(genesis_block)
     return genesis_block
 
-def create_new_block(transactions, previous_block):
+def create_new_block(transaction, previous_block):
     block = {
         "index": previous_block['index'] + 1,
         "timestamp": str(datetime.now()),
-        "transactions": transactions,
+        "transaction": transaction,
         "previous_hash": previous_block['hash']
     }
     block["hash"] = hash_block(block)
@@ -46,41 +47,40 @@ if "transactions" not in st.session_state:
 if "blockchain" not in st.session_state:
     st.session_state.blockchain = [create_genesis_block()]
 
-MAX_TRANSACTIONS_PER_BLOCK = 5
-
-# --- Helper to add transaction ---
+# --- Helper to add transaction and create a new block immediately ---
 def add_transaction(sender, receiver, amount):
-    st.session_state.transactions.append({
+    # Check balances for student senders
+    if sender != st.session_state.teacher and st.session_state.students[sender] < amount:
+        st.error(f"{sender} has insufficient balance!")
+        return False
+
+    # Create transaction record
+    transaction = {
         "timestamp": str(datetime.now()),
         "sender": sender,
         "receiver": receiver,
         "amount": amount
-    })
+    }
 
     # Update balances
     if sender != st.session_state.teacher:
-        if st.session_state.students[sender] < amount:
-            st.error(f"{sender} has insufficient balance!")
-            st.session_state.transactions.pop()  # Remove failed tx
-            return False
-        else:
-            st.session_state.students[sender] -= amount
-
+        st.session_state.students[sender] -= amount
     st.session_state.students[receiver] += amount
-    st.success(f"Transaction successful: {sender} → {receiver} : {amount} EduCoins")
 
-    # Create new block if max tx reached
-    if len(st.session_state.transactions) % MAX_TRANSACTIONS_PER_BLOCK == 0:
-        previous_block = st.session_state.blockchain[-1]
-        new_block = create_new_block(st.session_state.transactions[-MAX_TRANSACTIONS_PER_BLOCK:], previous_block)
-        st.session_state.blockchain.append(new_block)
-        st.info(f"New block created with {MAX_TRANSACTIONS_PER_BLOCK} transactions!")
+    # Append to transactions list
+    st.session_state.transactions.append(transaction)
 
+    # Create new block with this single transaction
+    previous_block = st.session_state.blockchain[-1]
+    new_block = create_new_block(transaction, previous_block)
+    st.session_state.blockchain.append(new_block)
+
+    st.success(f"Transaction recorded and new block created: {sender} → {receiver} : {amount} EduCoins")
     return True
 
 # --- Streamlit UI ---
 
-st.title("💰 EduCoin Classroom Cryptocurrency with Blockchain")
+st.title("💰 EduCoin Classroom Cryptocurrency (1 transaction per block)")
 
 st.sidebar.header("Current Balances")
 for student, balance in st.session_state.students.items():
@@ -88,8 +88,8 @@ for student, balance in st.session_state.students.items():
 
 st.sidebar.markdown("---")
 st.sidebar.header("Blockchain Info")
-st.sidebar.write(f"Blocks mined: {len(st.session_state.blockchain)}")
-st.sidebar.write(f"Pending transactions: {len(st.session_state.transactions) % MAX_TRANSACTIONS_PER_BLOCK}")
+st.sidebar.write(f"Total blocks (including genesis): {len(st.session_state.blockchain)}")
+st.sidebar.write(f"Total transactions: {len(st.session_state.transactions)}")
 
 # Step 1: Teacher sending coins to student
 st.header("Step 1: Teacher sends coins to Student")
@@ -98,8 +98,7 @@ student_recipient = st.selectbox("Select Student to receive coins:", list(st.ses
 coins_to_send = st.number_input("Number of coins to send:", min_value=1, step=1)
 
 if st.button("Send Coins (Teacher → Student)"):
-    # For teacher, no balance check needed
-    st.session_state.teacher = teacher_name  # update teacher name
+    st.session_state.teacher = teacher_name
     add_transaction(teacher_name, student_recipient, coins_to_send)
 
 st.markdown("---")
@@ -138,11 +137,11 @@ for block in st.session_state.blockchain:
     st.write(f"Timestamp: {block['timestamp']}")
     st.write(f"Previous Hash: {block['previous_hash']}")
     st.write(f"Hash: {block['hash']}")
-    if block["transactions"]:
-        st.write("Transactions:")
-        st.table(pd.DataFrame(block["transactions"]))
+    if block["transaction"]:
+        st.write("Transaction:")
+        st.json(block["transaction"])
     else:
-        st.write("No transactions in this block (Genesis block)")
+        st.write("Genesis block (no transactions)")
 
 
 
