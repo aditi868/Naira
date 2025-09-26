@@ -6,7 +6,7 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <h1>💰 EduCoin: Classroom Crypto</h1>
+  <h1> EduCoin: Classroom Crypto</h1>
 
   <section id="teacher">
     <h2>Teacher Panel</h2>
@@ -31,7 +31,7 @@
   </section>
 
   <section>
-    <h2>🏆 Leaderboard</h2>
+    <h2> Leaderboard</h2>
     <ol id="leaderboard"></ol>
   </section>
 
